@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 
 private const val TAG = "QuizViewModel"
 
-class QuizViewModel : ViewModel() {
+class QuizViewModel(private var currentQuestionIndex: Int = 0) : ViewModel() {
     var currentIndex = 0
     private val questionBank = listOf(
         Question(R.string.question_australia,true),
@@ -15,16 +15,36 @@ class QuizViewModel : ViewModel() {
         Question(R.string.question_americas,true),
         Question(R.string.question_asia, true)
     )
+
+    val bankSize: Int get() = questionBank.size
+
     val currentQuestionAnswer: Boolean
     get() =questionBank[currentIndex].answer
 
     val currentQuestionText: Int
     get() =questionBank[currentIndex].textResId
 
+    var counterCorrectAnswer = 0
+    var counterCompleteQuestion = 0
+
+    var currentQuestionIsEnabled: Boolean get() = questionBank[currentIndex].isEnabled
+    set(value) {questionBank[currentIndex].isEnabled = value}
+
     fun moveToNext() {
         currentIndex  =  (currentIndex +  1)  %questionBank.size
     }
     fun moveToPrev() {
-        currentIndex  =  (currentIndex -  1)  %questionBank.size
+        currentIndex = if (currentIndex < 1){
+            questionBank.size - 1
+        }
+        else
+        {  (currentIndex -  1)  %questionBank.size}
+    }
+    fun restart () {
+        for (element in questionBank){
+            element.isEnabled = true
+        }
+        counterCorrectAnswer = 0
+        counterCompleteQuestion = 0
     }
 }

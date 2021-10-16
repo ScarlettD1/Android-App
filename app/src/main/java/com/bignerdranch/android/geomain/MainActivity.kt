@@ -1,10 +1,8 @@
 package com.bignerdranch.android.geomain
 
-import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
@@ -24,9 +22,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prevButton: ImageButton
     private lateinit var cheatButton: Button
     private lateinit var questionTextView: TextView
-    private var score = 0
     private val quizViewModel: QuizViewModel by lazy {
-        ViewModelProviders.of(this).get(QuizViewModel::class.java)
+        val factory = QuizViewModelFactory(0)
+        ViewModelProvider(this@MainActivity, factory).get(QuizViewModel::class.java)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +34,7 @@ class MainActivity : AppCompatActivity() {
 
         val currentIndex = savedInstanceState?.getInt(KEY_INDEX, 0) ?: 0
         quizViewModel.currentIndex = currentIndex
+
         val  provider: ViewModelProvider = ViewModelProviders.of(this)
         val quizViewModel = provider.get(QuizViewModel::class.java)
         Log.d(TAG,  "Got a  QuizViewModel:$quizViewModel")
@@ -109,24 +108,41 @@ class MainActivity : AppCompatActivity() {
     private fun updateQuestion() {
         val questionTextResId = quizViewModel.currentQuestionText
         questionTextView.setText(questionTextResId)
-        trueButton.isClickable = true
-        falseButton.isClickable = true
+
+        trueButton.isEnabled = quizViewModel.currentQuestionIsEnabled
+        falseButton.isEnabled = quizViewModel.currentQuestionIsEnabled
     }
     private fun checkAnswer(userAnswer: Boolean) {
         val correctAnswer = quizViewModel.currentQuestionAnswer
         val messageResId =
             if (userAnswer == correctAnswer) {
-                score += 1
                 R.string.correct_toast
             } else {
                 R.string.incorrect_toast
             }
+
+        if (userAnswer == correctAnswer) {
+            quizViewModel.counterCorrectAnswer++
+
+        }
+        quizViewModel.counterCompleteQuestion++
+
+        quizViewModel.currentQuestionIsEnabled = false
+
+        trueButton.isEnabled = quizViewModel.currentQuestionIsEnabled
+        falseButton.isEnabled = quizViewModel.currentQuestionIsEnabled
+
         Toast.makeText(this, messageResId,
             Toast.LENGTH_SHORT)
             .show()
 
-        trueButton.isClickable = false
-        falseButton.isClickable = false
+        if( quizViewModel.counterCompleteQuestion == quizViewModel.bankSize) {
+            Toast.makeText(this,
+                "Correct: " + (quizViewModel.counterCorrectAnswer * 100/ quizViewModel.bankSize).toString() + '%',
+                Toast.LENGTH_SHORT)
+                .show()
+            quizViewModel.restart()
+        }
     }
 
 }
