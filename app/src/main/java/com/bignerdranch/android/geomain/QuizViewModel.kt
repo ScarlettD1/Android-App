@@ -30,6 +30,9 @@ class QuizViewModel(private var currentQuestionIndex: Int = 0) : ViewModel() {
     var currentQuestionIsEnabled: Boolean get() = questionBank[currentIndex].isEnabled
     set(value) {questionBank[currentIndex].isEnabled = value}
 
+    var isCheated: Boolean get() = questionBank[currentIndex].isCheated
+    set(value) {questionBank[currentIndex].isCheated = value}
+
     fun moveToNext() {
         currentIndex  =  (currentIndex +  1)  %questionBank.size
     }
@@ -43,8 +46,12 @@ class QuizViewModel(private var currentQuestionIndex: Int = 0) : ViewModel() {
     fun restart () {
         for (element in questionBank){
             element.isEnabled = true
+            element.isCheated = false
         }
         counterCorrectAnswer = 0
         counterCompleteQuestion = 0
+    }
+    fun setCheating () {
+        questionBank[currentIndex].isCheated = true
     }
 }

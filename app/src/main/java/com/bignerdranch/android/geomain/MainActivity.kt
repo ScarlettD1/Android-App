@@ -1,5 +1,11 @@
 package com.bignerdranch.android.geomain
 
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.ActivityManager
+import android.app.ActivityOptions
+import android.content.Intent
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -26,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         val factory = QuizViewModelFactory(0)
         ViewModelProvider(this@MainActivity, factory).get(QuizViewModel::class.java)
     }
-
+    @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate(Bundle?) called")
@@ -68,14 +74,34 @@ class MainActivity : AppCompatActivity() {
             updateQuestion()
         }
 
-        cheatButton.setOnClickListener {
+        cheatButton.setOnClickListener { view ->
             val answerIsTrue = quizViewModel.currentQuestionAnswer
             val intent = CheatActivity.newIntent(this@MainActivity, answerIsTrue)
-            startActivityForResult(intent, REQUEST_CODE_CHEAT)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val options = ActivityOptions.makeClipRevealAnimation(view, 0, 0, view.width, view.height)
+                startActivityForResult(intent, REQUEST_CODE_CHEAT, options.toBundle())
+            }
+            else {
+                startActivityForResult(intent, REQUEST_CODE_CHEAT)
+            }
         }
 
         updateQuestion()
 
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode != Activity.RESULT_OK) {
+            return
+        }
+
+        if (requestCode == REQUEST_CODE_CHEAT){
+            if(data?.getBooleanExtra(EXTRA_ANSWER_SHOWN, false) == true){
+                quizViewModel.setCheating()
+            }
+        }
     }
 
     override fun onStart() {
@@ -114,14 +140,13 @@ class MainActivity : AppCompatActivity() {
     }
     private fun checkAnswer(userAnswer: Boolean) {
         val correctAnswer = quizViewModel.currentQuestionAnswer
-        val messageResId =
-            if (userAnswer == correctAnswer) {
-                R.string.correct_toast
-            } else {
-                R.string.incorrect_toast
+        val messageResId = when {
+                quizViewModel.isCheated -> R.string.judgment_toast
+                userAnswer == correctAnswer -> R.string.correct_toast
+            else -> R.string.incorrect_toast
             }
 
-        if (userAnswer == correctAnswer) {
+        if (userAnswer == correctAnswer && !quizViewModel.isCheated) {
             quizViewModel.counterCorrectAnswer++
 
         }
